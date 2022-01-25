@@ -12,6 +12,8 @@
 #include <iostream>
 #include <algorithm>
 
+#define KEY_PRESSED(x) (GetAsyncKeyState(x) & 0x8000)
+
 typedef struct C_LDR_DATA_TABLE_ENTRY
 {
     LIST_ENTRY InLoadOrderLinks;

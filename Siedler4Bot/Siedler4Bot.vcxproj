@@ -151,25 +151,33 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="src\bot\RomanDebugBotLogic.hpp" />
+    <ClInclude Include="src\bot\IBotLogic.hpp" />
     <ClInclude Include="src\DllMain.hpp" />
     <ClInclude Include="src\logging\AyyLog.hpp" />
     <ClInclude Include="src\sdk\Entities\S4Entity.hpp" />
     <ClInclude Include="src\sdk\Entities\S4MovementType.hpp" />
+    <ClInclude Include="src\sdk\Landscape\S4EcoSector.hpp" />
     <ClInclude Include="src\sdk\Landscape\S4GroundType.hpp" />
     <ClInclude Include="src\sdk\Landscape\S4Resource.hpp" />
     <ClInclude Include="src\sdk\Landscape\S4WorldTile.hpp" />
     <ClInclude Include="src\S4Bot.hpp" />
+    <ClInclude Include="src\sdk\S4BuildCheckResult.hpp" />
     <ClInclude Include="src\sdk\S4Building.hpp" />
     <ClInclude Include="src\sdk\Entities\S4EntityBaseType.hpp" />
     <ClInclude Include="src\sdk\Entities\S4EntityType.hpp" />
     <ClInclude Include="src\sdk\S4Nation.hpp" />
     <ClInclude Include="src\sdk\Entities\S4Settler.hpp" />
     <ClInclude Include="src\sdk\S4Event.hpp" />
+    <ClInclude Include="src\utils\MathUtils.hpp" />
     <ClInclude Include="src\utils\Hook.hpp" />
     <ClInclude Include="src\utils\Pattern.hpp" />
+    <ClInclude Include="src\utils\S4Position.hpp" />
+    <ClInclude Include="src\utils\Utils.hpp" />
     <ClInclude Include="src\utils\Win32.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\bot\RomanDebugBotLogic.cpp" />
     <ClCompile Include="src\DllMain.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

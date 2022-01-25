@@ -54,7 +54,9 @@ namespace Hook
             Position(position),
             Original(nullptr),
             OriginalInstructions(new unsigned char[size])
-        {}
+        {
+            Hook();
+        }
 
         ~IHook() noexcept
         {
@@ -94,7 +96,7 @@ namespace Hook
                     VirtualProtect(source, lenght, 0x40, &oldProtection);
 
                     // NOP out the bytes
-                    // __stosb(static_cast<unsigned char*>(source), 0x90, lenght);
+                    memset(source, 0x90, lenght);
 
                     // place JMP at the original function
                     *(static_cast<unsigned char*>(source) + jumpOffset) = static_cast<unsigned char>(0xE9);

@@ -25,5 +25,7 @@ This software is intended for educational purposes only!
 2. Inject the Siedler4Bot.dll into a running Settlers 4 Instance using you favourite DLL injector
 
 Press 'END' to eject the bot.
+
 Press 'HOME' to show the debug UI.
+
 Press 'DEL' to run the debug action.

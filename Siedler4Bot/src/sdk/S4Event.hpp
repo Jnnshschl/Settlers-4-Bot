@@ -16,6 +16,10 @@ enum class S4EventId : unsigned long
     GameTick = 21, // not sure
     WindowFocusChanged = 22,
 
+    MenuEnterSingleplayer = 43,
+    MenuEnterMultiplayer = 44,
+    MenuExitGame = 45,
+
     EnterBuildMode = 437,
 
     SecondlyTick = 604, // ticks every 1s as local event
@@ -42,6 +46,9 @@ struct S4Event
     unsigned char Player{ 0 };
     char Pad1{ 0 };
 
-    __forceinline unsigned short* P0UShort() { return reinterpret_cast<unsigned short*>(Params); }
-    __forceinline unsigned short* P1UShort() { return reinterpret_cast<unsigned short*>(Params + 1); }
+    template<typename T>
+    __forceinline T* Param0AsPointer() { return reinterpret_cast<T*>(Params); }
+
+    template<typename T>
+    __forceinline T* Param1AsPointer() { return reinterpret_cast<T*>(Params + 1); }
 };

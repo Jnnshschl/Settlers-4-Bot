@@ -9,6 +9,9 @@
 #include <vector>
 #include <string>
 #include <format>
+#include <chrono>
+#include <deque>
+#include <tuple>
 
 #include "S4Bot.hpp"
 
@@ -19,11 +22,15 @@
 #include "sdk/Landscape/S4WorldTile.hpp"
 #include "sdk/Entities/S4Entity.hpp"
 
-#define KEY_PRESSED(x) (GetAsyncKeyState(x) & 0x8000)
+#include "bot/IBotLogic.hpp"
+#include "bot/RomanDebugBotLogic.hpp"
 
 typedef long(__stdcall* tEndScene) (IDirect3DDevice9*);
 
 // # entry point and bot loop
+bool GameExited = false;
+IBotLogic* BotLogic = nullptr;
+
 unsigned long __stdcall S4BotEntry(void* hModule) noexcept;
 void S4BotTick() noexcept;
 
@@ -33,14 +40,14 @@ IDirect3DDevice9* GetD3D9DummyDevice() noexcept;
 bool CreateD3D9DummyDevice(IDirect3D9* d3d, HWND windowHandle, IDirect3DDevice9** dummyDevice) noexcept;
 
 // # debug ui stuff
-static HWND DebugUiMainWindowHandle = nullptr;
-static RECT DebugUiWindowRect;
-static int DebugUiWindowWidth;
-static int DebugUiWindowHeight;
+HWND DebugUiMainWindowHandle = nullptr;
+RECT DebugUiWindowRect;
+int DebugUiWindowWidth;
+int DebugUiWindowHeight;
 
-static ID3DXLine* DefaultLine = nullptr;
-static ID3DXFont* DefaultHeaderFont = nullptr;
-static ID3DXFont* DefaultTextFont = nullptr;
+ID3DXLine* DefaultLine = nullptr;
+ID3DXFont* DefaultHeaderFont = nullptr;
+ID3DXFont* DefaultTextFont = nullptr;
 
 constexpr auto DUI_DEFAULT_FONT = "Consolas";
 constexpr D3DCOLOR DebugUiTextColor = 0xFFFFFFFF;
@@ -49,32 +56,35 @@ constexpr D3DCOLOR DebugUiBorderColor = 0xFF75D700;
 constexpr D3DCOLOR DebugUiWhiteColor = 0xFFFFFFFF;
 constexpr D3DCOLOR DebugUiRedColor = 0xFFFF0000;
 
-static int DUI_PANEL_X = 300;
-static int DUI_PANEL_Y = 32;
-static int DUI_PANEL_WIDTH = 400;
-static int DUI_PANEL_HEIGHT = 500;
+int DUI_PANEL_X = 300;
+int DUI_PANEL_Y = 32;
+int DUI_PANEL_WIDTH = 400;
+int DUI_PANEL_HEIGHT = 500;
 
-static D3DRECT DebugUiPanelRect{};
-static D3DXVECTOR2 DebugUiPanelBorderVectors[5];
-static RECT DebugUiHeaderRect{};
+D3DRECT DebugUiPanelRect{};
+D3DXVECTOR2 DebugUiPanelBorderVectors[5];
+RECT DebugUiHeaderRect{};
+
+int DebugPointX = 0;
+int DebugPointY = 0;
 
 void SetupDebugUi(IDirect3DDevice9* d3d9Device) noexcept;
 
 // # hooks and gateway functions
-static bool EndSceneShouldExit = false;
-static bool EndSceneExited = false;
+bool EndSceneShouldExit = false;
+bool EndSceneExited = false;
 
-static Hook::VFuncHook<tEndScene>* HookEndScene = nullptr;
-static long __stdcall GwEndScene(IDirect3DDevice9* d3ddevice) noexcept;
+Hook::VFuncHook<tEndScene>* HookEndScene = nullptr;
+long __stdcall GwEndScene(IDirect3DDevice9* d3ddevice) noexcept;
 
-static Hook::DirectHook<tSendNetEvent>* HookSendNetEvent = nullptr;
-static void __stdcall GwSendNetEvent(S4Event* s4Event) noexcept;
+Hook::DirectHook<tSendNetEvent>* HookSendNetEvent = nullptr;
+void __stdcall GwSendNetEvent(S4Event* s4Event) noexcept;
 
-static Hook::DirectHook<tSendLocalEvent>* HookSendLocalEvent = nullptr;
-static void __fastcall GwSendLocalEvent(void* eventEngine, void* unk, S4Event* s4Event) noexcept;
+Hook::DirectHook<tSendLocalEvent>* HookSendLocalEvent = nullptr;
+void __fastcall GwSendLocalEvent(void* eventEngine, void* unk, S4Event* s4Event) noexcept;
 
-static Hook::DirectHook<tGenerateBuildPoints>* DirectHookGenerateBuildPoints = nullptr;
-static unsigned int __stdcall GwGenerateBuildPoints(int playerId, int buildingId, int unk) noexcept;
+Hook::DirectHook<tBuildCheck>* HookBuildCheck = nullptr;
+int __stdcall GwBuildCheck(unsigned int x, unsigned int y, unsigned int playerId, int buildingId, int unk) noexcept;
 
 // # inline helper functions
 __forceinline bool IsOnScreen(int x, int y) noexcept
