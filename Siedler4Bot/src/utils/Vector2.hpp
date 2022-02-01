@@ -3,16 +3,20 @@
 #include "Utils.hpp"
 #include "MathUtils.hpp"
 
-struct S4Position
+struct Vector2
 {
 	unsigned short X;
 	unsigned short Y;
 
-	S4Position(unsigned short x, unsigned short y)
+	Vector2()
+		: X(0), Y(0)
+	{}
+
+	Vector2(unsigned short x, unsigned short y)
 		: X(x), Y(y)
 	{}
 
-	inline unsigned short DistanceTo(const S4Position& other) const noexcept
+	inline unsigned short DistanceTo(const Vector2& other) const noexcept
 	{
 		return CalcDistance(X, Y, other.X, other.Y);
 	}

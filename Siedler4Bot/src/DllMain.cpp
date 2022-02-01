@@ -17,63 +17,64 @@ int __stdcall DllMain(HMODULE hModule, unsigned long dwReason, void* lpReserved)
 
 unsigned long __stdcall S4BotEntry(void* hModule) noexcept
 {
-	if (S4::Init())
+	S4 = new S4Api();
+
+	if (S4->Init())
 	{
-		AyyLog("S4Bot injected, press \"", LookupKeyName(S4::Keys::EXIT), "\" to eject");
-		// S4Bot::Game::ShowTextMsg(">> S4Bot injected!", 8, 0, 0, 0);
+		AyyLog("S4Bot injected, press \"", LookupKeyName(S4Bot::Keys::EXIT), "\" to eject");
 
 		// hook all important methods
 		if (auto dummyDevice = GetD3D9DummyDevice())
 		{
 			HookEndScene = new Hook::VFuncHook<tEndScene>(GwEndScene, dummyDevice, 42, 7);
 		}
+		else
+		{
+			// skip EndScene stuff when exiting
+			EndSceneExited = true;
+		}
 
-		HookSendNetEvent = new Hook::DirectHook<tSendNetEvent>(GwSendNetEvent, S4::Game::_SendNetEvent, 5, 0);
-		HookSendLocalEvent = new Hook::DirectHook<tSendLocalEvent>(GwSendLocalEvent, S4::Game::_SendLocalEvent, 6, 0);
+		HookSendNetEvent = new Hook::DirectHook<tSendNetEvent>(GwSendNetEvent, S4->_SendNetEvent, 5, 0);
+		HookSendLocalEvent = new Hook::DirectHook<tSendLocalEvent>(GwSendLocalEvent, S4->_SendLocalEvent, 6, 0);
+		HookBuildingFinished = new Hook::DirectHook<tBuildingFinished>(GwBuildingFinished, S4->_BuildingFinished, 5, 0);
 
 		// stuff used for debugging only, enabling them may cause a lot of spam logging
 		// HookBuildCheck = new Hook::DirectHook<tBuildCheck>(GwBuildCheck, S4Bot::Game::_BuildCheck, 6, 0);
 
-		AyyLog("PlayerId:            ", S4::Game::LocalPlayerId());
-		AyyLog("Nation:              ", S4::Game::NationName());
+		AyyLog("PlayerId:            ", S4->LocalPlayerId());
+		AyyLog("Nation:              ", S4->NationName());
+		AyyLog("SendNetEvent:        0x", POINTER_AS_HEX(S4->_SendNetEvent));
+		AyyLog("SendLocalEvent:      0x", POINTER_AS_HEX(S4->_SendLocalEvent));
+		AyyLog("BuildingFinished:    0x", POINTER_AS_HEX(S4->_BuildingFinished));
 
-		AyyLog("SendNetEvent:        0x", POINTER_AS_HEX(S4::Game::_SendNetEvent));
-		AyyLog("SendLocalEvent:      0x", POINTER_AS_HEX(S4::Game::_SendLocalEvent));
-		AyyLog("BuildCheck:          0x", POINTER_AS_HEX(S4::Game::_BuildCheck));
-
-		// S4Bot::Game::BuildBuilding(S4Building::Stonequarry, 381, 180);
-		// S4Bot::Game::MoveSettlers(new unsigned short[] { 412 }, 1, 381, 180);
-
-		BotLogic = new RomanDebugBotLogic();
+		BotLogic = new RomanSimpleBotLogic(S4);
 
 		// wait until we should eject
-		while (!KEY_PRESSED(S4::Keys::EXIT) && !GameExited)
+		while (!KEY_PRESSED(S4Bot::Keys::EXIT) && !GameExited)
 		{
-			std::this_thread::sleep_for(S4::Config::MAIN_LOOP_SLEEP_TIME);
+			std::this_thread::sleep_for(S4Bot::Config::MAIN_LOOP_SLEEP_TIME);
 		}
+
+		// cleanup hooks
+		if (HookSendNetEvent) delete HookSendNetEvent;
+		if (HookSendLocalEvent) delete HookSendLocalEvent;
+		if (HookBuildingFinished) delete HookBuildingFinished;
+		if (HookBuildCheck) delete HookBuildCheck;
 
 		// wait for the EndScene to cleanup and exit
 		EndSceneShouldExit = true;
-		while (!EndSceneExited) std::this_thread::sleep_for(S4::Config::MAIN_LOOP_SLEEP_TIME);
+		while (!EndSceneExited) std::this_thread::sleep_for(S4Bot::Config::MAIN_LOOP_SLEEP_TIME);
 
-		// cleanup hooks
 		if (HookEndScene) delete HookEndScene;
-		if (HookSendNetEvent) delete HookSendNetEvent;
-		if (HookSendLocalEvent) delete HookSendLocalEvent;
-		if (HookBuildCheck) delete HookBuildCheck;
 
 		if (BotLogic) delete BotLogic;
 	}
 	else
 	{
 		AyyLog("S4Bot failed to init...");
-
-		// wait until user ejects the bot as it failed to init
-		while (!KEY_PRESSED(S4::Keys::EXIT))
-		{
-			std::this_thread::sleep_for(S4::Config::MAIN_LOOP_SLEEP_TIME);
-		}
 	}
+
+	if (S4) delete S4;
 
 	DBG_CLOSE_CONSOLE;
 	ExitThread(0);
@@ -88,95 +89,104 @@ void S4BotTick() noexcept
 	}
 
 	// used to trigger debug actions with a key
-	if (static bool sVar = false; OnKeyPressedOnce(S4::Keys::DEBUG, sVar))
+	if (static bool sVar = false; OnKeyPressedOnce(S4Bot::Keys::DEBUG, sVar))
 	{
-		AyyLog("Executed Debug-Action at tick: ", S4::Game::CurrentTick());
+		AyyLog("Executed Debug-Action at tick: ", S4->CurrentTick());
 
 		// search for stone spots and build a stonequarry        
-		for (const auto& spot : S4::Game::FindResourceSpots(S4Resource::Stone1, S4Resource::Stone16))
+		for (const auto& spot : S4->FindResourceSpots(S4Resource::Stone1, S4Resource::Stone16))
 		{
-			S4::Game::BuildAtClosestSpot(S4Building::Stonequarry, spot.CenterPosition());
+			S4->BuildAtClosestSpot(S4Building::Stonequarry, spot.CenterPosition());
+			S4->BuildAtClosestSpot(S4Building::SmallTower, S4->FindClosestSpotOnBorder(spot.CenterPosition()));
 			break;
 		}
 
 		// search for forest and build a woodcutter
-		for (const auto& spot : S4::Game::FindResourceSpots(S4Resource::Wood, S4Resource::Wood))
+		for (const auto& spot : S4->FindResourceSpots(S4Resource::Wood, S4Resource::Wood))
 		{
-			S4::Game::BuildAtClosestSpot(S4Building::Woodcutter, spot.CenterPosition());
+			S4->BuildAtClosestSpot(S4Building::Woodcutter, spot.CenterPosition());
+			S4->BuildAtClosestSpot(S4Building::SmallTower, S4->FindClosestSpotOnBorder(spot.CenterPosition()));
 			break;
 		}
 
-		// dump stuff for debug purposes
-		std::ofstream landscapeFile;
-		std::ofstream resourceFile;
-		std::ofstream landownersFile;
-		std::ofstream buildspotsFile;
+		// DumpDebugInfo();
+	}
+}
 
-		landscapeFile.open("s4bot-landscape-dump.txt");
-		resourceFile.open("s4bot-resource-dump.txt");
-		landownersFile.open("s4bot-landowners-dump.txt");
-		buildspotsFile.open("s4bot-buildspots-dump.txt");
+void DumpDebugInfo() noexcept
+{
+	// dump stuff for debug purposes to the executeable folder
+	std::ofstream landscapeFile;
+	std::ofstream resourceFile;
+	std::ofstream landownersFile;
+	std::ofstream buildspotsFile;
 
-		const unsigned int mapSize = S4::Game::MapSize();
+	landscapeFile.open("s4bot-landscape-dump.txt");
+	resourceFile.open("s4bot-resource-dump.txt");
+	landownersFile.open("s4bot-landowners-dump.txt");
+	buildspotsFile.open("s4bot-buildspots-dump.txt");
 
-		for (unsigned short y = 0; y < mapSize; ++y)
+	const unsigned int mapSize = S4->MapSize();
+
+	for (unsigned short y = 0; y < mapSize; ++y)
+	{
+		for (unsigned short x = 0; x < mapSize; ++x)
 		{
-			for (unsigned short x = 0; x < mapSize; ++x)
+			const Vector2 pos{ x, y };
+			S4WorldTile* w = S4->Landscape(pos);
+
+			if (w)
 			{
-				const S4Position pos{ x, y };
-				S4WorldTile* w = S4::Game::Landscape(pos);
-
-				if (w)
-				{
-					if (w->Type >= S4GroundType::Water1 && w->Type <= S4GroundType::Water8) { landscapeFile << "~"; }
-					else if (w->Type == S4GroundType::Beach) { landscapeFile << "B"; }
-					else if (w->Type >= S4GroundType::Grass && w->Type <= S4GroundType::Grass_Mud) { landscapeFile << "G"; }
-					else if (w->Type == S4GroundType::Rock || w->Type == S4GroundType::Rock_Snow) { landscapeFile << "R"; }
-					else { landscapeFile << " "; }
-				}
-				else
-				{
-					landscapeFile << " ";
-				}
-
-				S4Resource r = S4::Game::Resource(pos);
-
-				if (r == S4Resource::None) { resourceFile << " "; }
-				else if (r == S4Resource::Wood) { resourceFile << "W"; }
-				else if (r >= S4Resource::Stone1 && r <= S4Resource::Stone16) { resourceFile << "S"; }
-				else if (r >= S4Resource::Coal1 && r <= S4Resource::Coal16) { resourceFile << "C"; }
-				else if (r >= S4Resource::Fish1 && r <= S4Resource::Fish16) { resourceFile << "F"; }
-				else if (r >= S4Resource::Gold1 && r <= S4Resource::Gold16) { resourceFile << "G"; }
-				else if (r >= S4Resource::Iron1 && r <= S4Resource::Iron16) { resourceFile << "I"; }
-				else if (r >= S4Resource::Stonemine1 && r <= S4Resource::Stonemine16) { resourceFile << "M"; }
-				else if (r >= S4Resource::Sulphur1 && r <= S4Resource::Sulphur16) { resourceFile << "U"; }
-				else { resourceFile << "!"; }
-
-				unsigned char p = S4::Game::LandscapeOwner(pos);
-				landownersFile << p ? std::to_string(static_cast<int>(p)) : " ";
-
-				if (p == S4::Game::LocalPlayerId())
-				{
-					S4BuildCheckResult canBuild = S4::Game::CanBuild(pos, S4Building::Stonequarry);
-					buildspotsFile << std::to_string(p);
-				}
-				else
-				{
-					buildspotsFile << " ";
-				}
+				if (w->Type >= S4GroundType::Water1 && w->Type <= S4GroundType::Water8) { landscapeFile << "~"; }
+				else if (w->Type == S4GroundType::Beach) { landscapeFile << "B"; }
+				else if (w->Type >= S4GroundType::Grass && w->Type <= S4GroundType::Grass_Mud) { landscapeFile << "G"; }
+				else if (w->Type == S4GroundType::Rock || w->Type == S4GroundType::Rock_Snow) { landscapeFile << "R"; }
+				else { landscapeFile << " "; }
+			}
+			else
+			{
+				landscapeFile << " ";
 			}
 
-			landscapeFile << std::endl;
-			resourceFile << std::endl;
-			landownersFile << std::endl;
-			buildspotsFile << std::endl;
+			S4Resource r = S4->Resource(pos);
+
+			if (r == S4Resource::None) { resourceFile << " "; }
+			else if (r == S4Resource::Wood) { resourceFile << "W"; }
+			else if (r >= S4Resource::Stone1 && r <= S4Resource::Stone16) { resourceFile << "S"; }
+			else if (r >= S4Resource::Coal1 && r <= S4Resource::Coal16) { resourceFile << "C"; }
+			else if (r >= S4Resource::Fish1 && r <= S4Resource::Fish16) { resourceFile << "F"; }
+			else if (r >= S4Resource::Gold1 && r <= S4Resource::Gold16) { resourceFile << "G"; }
+			else if (r >= S4Resource::Iron1 && r <= S4Resource::Iron16) { resourceFile << "I"; }
+			else if (r >= S4Resource::Stonemine1 && r <= S4Resource::Stonemine16) { resourceFile << "M"; }
+			else if (r >= S4Resource::Sulphur1 && r <= S4Resource::Sulphur16) { resourceFile << "U"; }
+			else { resourceFile << "!"; }
+
+			unsigned char p = S4->LandscapeOwner(pos);
+			const auto pstr = std::to_string(p);
+
+			landownersFile << (p ? pstr : " ");
+
+			if (p == S4->LocalPlayerId())
+			{
+				S4BuildCheckResult canBuild = S4->CanBuild(pos, S4Building::Stonequarry);
+				buildspotsFile << pstr;
+			}
+			else
+			{
+				buildspotsFile << " ";
+			}
 		}
 
-		landscapeFile.close();
-		resourceFile.close();
-		landownersFile.close();
-		buildspotsFile.close();
+		landscapeFile << std::endl;
+		resourceFile << std::endl;
+		landownersFile << std::endl;
+		buildspotsFile << std::endl;
 	}
+
+	landscapeFile.close();
+	resourceFile.close();
+	landownersFile.close();
+	buildspotsFile.close();
 }
 
 void S4BotEventHandler(S4Event* s4Event, bool isNet) noexcept
@@ -201,7 +211,7 @@ void S4BotEventHandler(S4Event* s4Event, bool isNet) noexcept
 
 		for (size_t i = 0; i < s4Event->SettlersSize / sizeof(unsigned short); ++i)
 		{
-			AyyLog("                     -> Settler[", i, "]: id: ", s4Event->Settlers[i], " ptr: 0x", POINTER_AS_HEX(S4::Game::Entity(s4Event->Settlers[i])));
+			AyyLog("                     -> Settler[", i, "]: id: ", s4Event->Settlers[i], " ptr: 0x", POINTER_AS_HEX(S4->Entity(s4Event->Settlers[i])));
 		}
 
 		break;
@@ -243,7 +253,7 @@ void S4BotEventHandler(S4Event* s4Event, bool isNet) noexcept
 
 IDirect3DDevice9* GetD3D9DummyDevice() noexcept
 {
-	const HWND windowHandle = S4::S4MainModule.Read<HWND>(S4::Offsets::MAINHWND);
+	const HWND windowHandle = S4->MainModule.Read<HWND>(S4Bot::Offsets::MAINHWND);
 
 	if (!windowHandle)
 	{
@@ -278,11 +288,11 @@ bool CreateD3D9DummyDevice(IDirect3D9* d3d, HWND windowHandle, IDirect3DDevice9*
 	d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
 	d3dpp.hDeviceWindow = windowHandle;
 
-	if (auto result = d3d->CreateDevice(0, D3DDEVTYPE_HAL, d3dpp.hDeviceWindow, 0x20L, &d3dpp, dummyDevice) != S_OK)
+	if (d3d->CreateDevice(0, D3DDEVTYPE_HAL, d3dpp.hDeviceWindow, 0x20L, &d3dpp, dummyDevice) != S_OK)
 	{
 		d3dpp.Windowed = true;
 
-		if (result = d3d->CreateDevice(0, D3DDEVTYPE_HAL, d3dpp.hDeviceWindow, 0x20L, &d3dpp, dummyDevice) != S_OK)
+		if (d3d->CreateDevice(0, D3DDEVTYPE_HAL, d3dpp.hDeviceWindow, 0x20L, &d3dpp, dummyDevice) != S_OK)
 		{
 			AyyLog("Failed to create dummy device, unable to hook EndScene");
 			return false;
@@ -292,81 +302,29 @@ bool CreateD3D9DummyDevice(IDirect3D9* d3d, HWND windowHandle, IDirect3DDevice9*
 	return true;
 }
 
-void SetupDebugUi(IDirect3DDevice9* d3d9Device) noexcept
-{
-	D3DXCreateLine(d3d9Device, &DefaultLine);
-	DefaultLine->SetWidth(1);
-
-	D3DXCreateFontA(d3d9Device, 24, 0, FW_DONTCARE, 1, false, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, ANTIALIASED_QUALITY, DEFAULT_PITCH | FF_DONTCARE, DUI_DEFAULT_FONT, &DefaultHeaderFont);
-	D3DXCreateFontA(d3d9Device, 14, 0, FW_DONTCARE, 1, false, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, ANTIALIASED_QUALITY, DEFAULT_PITCH | FF_DONTCARE, DUI_DEFAULT_FONT, &DefaultTextFont);
-
-	// align debug ui in the upper right corner if possible
-	if (GetWindowRect(S4::S4MainModule.Read<HWND>(S4::Offsets::MAINHWND), &DebugUiWindowRect))
-	{
-		DebugUiWindowWidth = DebugUiWindowRect.right - DebugUiWindowRect.left;
-		DebugUiWindowHeight = DebugUiWindowRect.bottom - DebugUiWindowRect.top;
-
-		DUI_PANEL_X = DebugUiWindowWidth - DUI_PANEL_WIDTH - 16;
-		DUI_PANEL_Y = 0; // to align at bottom: DebugUiWindowHeight - DUI_PANEL_HEIGHT - 1
-	}
-
-	DebugUiPanelRect =
-	{
-		DUI_PANEL_X,
-		DUI_PANEL_Y,
-		DUI_PANEL_X + DUI_PANEL_WIDTH,
-		DUI_PANEL_Y + DUI_PANEL_HEIGHT
-	};
-
-	DebugUiPanelBorderVectors[0] = D3DXVECTOR2(DUI_PANEL_X, DUI_PANEL_Y);
-	DebugUiPanelBorderVectors[1] = D3DXVECTOR2(DUI_PANEL_X + DUI_PANEL_WIDTH, DUI_PANEL_Y);
-	DebugUiPanelBorderVectors[2] = D3DXVECTOR2(DUI_PANEL_X + DUI_PANEL_WIDTH, DUI_PANEL_Y + DUI_PANEL_HEIGHT);
-	DebugUiPanelBorderVectors[3] = D3DXVECTOR2(DUI_PANEL_X, DUI_PANEL_Y + DUI_PANEL_HEIGHT);
-	DebugUiPanelBorderVectors[4] = D3DXVECTOR2(DUI_PANEL_X, DUI_PANEL_Y);
-
-	DebugUiHeaderRect =
-	{
-		DUI_PANEL_X + 4,
-		DUI_PANEL_Y + 2,
-		DUI_PANEL_X + DUI_PANEL_WIDTH,
-		DUI_PANEL_Y + DUI_PANEL_HEIGHT
-	};
-}
-
 long __stdcall GwEndScene(IDirect3DDevice9* d3d9Device) noexcept
 {
 	if (EndSceneExited) return HookEndScene->Original(d3d9Device);
 
-	static bool debugUiSetup = false;
-
-	if (!debugUiSetup)
+	if (!BotOverlay)
 	{
 		// only run the setup once
-		debugUiSetup = true;
-		SetupDebugUi(d3d9Device);
+		BotOverlay = new S4BotOverlay(S4->MainModule.Read<HWND>(S4Bot::Offsets::MAINHWND), d3d9Device);
+	}
+	else
+	{
+		BotOverlay->Render();
+
+		if (static bool sVar = false; OnKeyPressedOnce(S4Bot::Keys::DEBUG_UI, sVar))
+		{
+			BotOverlay->SwitchVisibility();
+		}
 	}
 
-	static bool renderDebugUi = false;
-
-	if (static bool sVar = false; OnKeyPressedOnce(S4::Keys::DEBUG_UI, sVar))
+	// release DirectX stuff and signal that we are ready to unhook
+	if (EndSceneShouldExit)
 	{
-		// toggle debug window visibility
-		renderDebugUi = !renderDebugUi;
-	}
-
-	if (renderDebugUi)
-	{
-		d3d9Device->Clear(1, &DebugUiPanelRect, D3DCLEAR_TARGET, DebugUiBackgroundColor, 0, 0);
-		DefaultHeaderFont->DrawTextA(0, "S4Bot", -1, &DebugUiHeaderRect, DT_LEFT | DT_NOCLIP, 0xFFFFFFFF);
-		DefaultLine->Draw(DebugUiPanelBorderVectors, 5, DebugUiBorderColor);
-	}
-
-	if (EndSceneShouldExit && debugUiSetup)
-	{
-		// need to release our DirectX stuff and signal that we are ready to unhook
-		DefaultLine->Release();
-		DefaultHeaderFont->Release();
-		DefaultTextFont->Release();
+		if (BotOverlay) delete BotOverlay;
 		EndSceneExited = true;
 	}
 
@@ -383,6 +341,12 @@ void __fastcall GwSendLocalEvent(void* eventEngine, void* unk, S4Event* s4Event)
 {
 	S4BotEventHandler(s4Event);
 	HookSendLocalEvent->Original(eventEngine, unk, s4Event);
+}
+
+void __fastcall GwBuildingFinished(int unk) noexcept
+{
+	HookBuildingFinished->Original(unk);
+	AyyLog("unk: ", S4->BuildingCount(S4Building::Woodcutter)); 
 }
 
 int __stdcall GwBuildCheck(unsigned int x, unsigned int y, unsigned int playerId, int buildingId, int unk) noexcept
