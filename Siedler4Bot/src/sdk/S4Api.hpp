@@ -319,8 +319,9 @@ public:
 	/// </summary>
 	/// <param name="start">Start Resource, example: Stone1</param>
 	/// <param name="end">End Resource, example: Stone16</param>
+	/// <param name="territoryOnly">Only search in our territory</param>
 	/// <returns>ResourceSpots found</returns>
-	std::vector<ResourceSpot> FindResourceSpots(S4Resource start, S4Resource end) noexcept;
+	std::vector<ResourceSpot> FindResourceSpots(S4Resource start, S4Resource end, bool territoryOnly = true) noexcept;
 
 	/// <summary>
 	/// Try to find the closest Spot for the building to the given position.

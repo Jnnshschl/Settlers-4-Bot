@@ -22,7 +22,7 @@ bool S4Api::Init() noexcept
 	return true;
 }
 
-std::vector<ResourceSpot> S4Api::FindResourceSpots(S4Resource start, S4Resource end) noexcept
+std::vector<ResourceSpot> S4Api::FindResourceSpots(S4Resource start, S4Resource end, bool territoryOnly) noexcept
 {
 	// find all resources that are in our ecosectors
 	std::deque<Vector2> resources{};
@@ -33,7 +33,7 @@ std::vector<ResourceSpot> S4Api::FindResourceSpots(S4Resource start, S4Resource 
 		{
 			const Vector2 pos{ x, y };
 
-			if (LandscapeOwner(pos) == LocalPlayerId())
+			if (!territoryOnly || LandscapeOwner(pos) == LocalPlayerId())
 			{
 				const S4Resource r = Resource(pos);
 
