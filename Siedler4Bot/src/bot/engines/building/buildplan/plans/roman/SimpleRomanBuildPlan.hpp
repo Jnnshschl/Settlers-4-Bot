@@ -9,19 +9,15 @@
 #include "../../../../../../sdk/S4Api.hpp"
 
 #include "../IBuildPlan.hpp"
-#include "../actions/IAction.hpp"
+#include "../../actions/IAction.hpp"
+#include "../../actions/StaticBuildAction.hpp"
+#include "../../actions/ExpandTerritoryAction.hpp"
+#include "../../actions/SimpleActionResult.hpp"
 
 class SimpleRomanBuildPlan : public IBuildPlan
 {
 	S4Api* S4;
-
-	/// <summary>
-	/// 1: Amount of buildings to build of that type
-	/// 2: Type of building to build
-	/// 3: Function that returns where to build
-	/// 4: Function that returns true when building should be built, use this for conditions
-	/// </summary>
-	std::deque<IAction*> BuildQueue;
+	std::deque<IAction*> Actions;
 
 public:
 	explicit SimpleRomanBuildPlan(S4Api* s4) noexcept;
@@ -30,4 +26,6 @@ public:
 
 private:
 	void Init() noexcept;
+	void BuildStoneQuarry(const Vector2& spot, bool buildTower);
+	void BuildForestry(const Vector2& spot, bool buildTower);
 };

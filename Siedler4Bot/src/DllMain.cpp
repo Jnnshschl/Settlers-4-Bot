@@ -92,23 +92,6 @@ void S4BotTick() noexcept
 	if (static bool sVar = false; OnKeyPressedOnce(S4Bot::Keys::DEBUG, sVar))
 	{
 		AyyLog("Executed Debug-Action at tick: ", S4->CurrentTick());
-
-		// search for stone spots and build a stonequarry        
-		for (const auto& spot : S4->FindResourceSpots(S4Resource::Stone1, S4Resource::Stone16))
-		{
-			S4->BuildAtClosestSpot(S4Building::Stonequarry, spot.CenterPosition());
-			S4->BuildAtClosestSpot(S4Building::SmallTower, S4->FindClosestSpotOnBorder(spot.CenterPosition()));
-			break;
-		}
-
-		// search for forest and build a woodcutter
-		for (const auto& spot : S4->FindResourceSpots(S4Resource::Wood, S4Resource::Wood))
-		{
-			S4->BuildAtClosestSpot(S4Building::Woodcutter, spot.CenterPosition());
-			S4->BuildAtClosestSpot(S4Building::SmallTower, S4->FindClosestSpotOnBorder(spot.CenterPosition()));
-			break;
-		}
-
 		// DumpDebugInfo();
 	}
 }
@@ -126,13 +109,10 @@ void DumpDebugInfo() noexcept
 	landownersFile.open("s4bot-landowners-dump.txt");
 	buildspotsFile.open("s4bot-buildspots-dump.txt");
 
-	const unsigned int mapSize = S4->MapSize();
-
-	for (unsigned short y = 0; y < mapSize; ++y)
+	for (Vector2 pos; pos.Y < S4->MapSize(); ++pos.Y)
 	{
-		for (unsigned short x = 0; x < mapSize; ++x)
+		for (; pos.X < S4->MapSize(); ++pos.X)
 		{
-			const Vector2 pos{ x, y };
 			S4WorldTile* w = S4->Landscape(pos);
 
 			if (w)
@@ -346,7 +326,7 @@ void __fastcall GwSendLocalEvent(void* eventEngine, void* unk, S4Event* s4Event)
 void __fastcall GwBuildingFinished(int unk) noexcept
 {
 	HookBuildingFinished->Original(unk);
-	AyyLog("unk: ", S4->BuildingCount(S4Building::Woodcutter)); 
+	AyyLog("Woodcutter Count: ", S4->BuildingCount(S4Building::Woodcutter)); 
 }
 
 int __stdcall GwBuildCheck(unsigned int x, unsigned int y, unsigned int playerId, int buildingId, int unk) noexcept

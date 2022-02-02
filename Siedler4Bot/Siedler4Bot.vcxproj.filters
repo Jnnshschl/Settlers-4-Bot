@@ -108,13 +108,22 @@
     <ClInclude Include="src\sdk\S4Api.hpp">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="src\bot\engines\building\buildplan\plans\actions\IAction.hpp">
+    <ClInclude Include="src\bot\engines\building\buildplan\actions\IAction.hpp">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="src\bot\engines\building\buildplan\plans\actions\BuildAction.hpp">
+    <ClInclude Include="src\bot\engines\building\buildplan\actions\SimpleAction.hpp">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="src\bot\engines\building\buildplan\plans\actions\StaticBuildAction.hpp">
+    <ClInclude Include="src\bot\engines\building\buildplan\actions\StaticBuildAction.hpp">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="src\bot\engines\building\buildplan\actions\ExpandTerritoryAction.hpp">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="src\bot\engines\building\buildplan\actions\SimpleActionResult.hpp">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="src\sdk\landscape\S4LandscapeStatus.hpp">
       <Filter>Headerdateien</Filter>
     </ClInclude>
   </ItemGroup>

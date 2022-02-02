@@ -157,9 +157,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="src\bot\engines\building\buildplan\plans\actions\BuildAction.hpp" />
-    <ClInclude Include="src\bot\engines\building\buildplan\plans\actions\IAction.hpp" />
-    <ClInclude Include="src\bot\engines\building\buildplan\plans\actions\StaticBuildAction.hpp" />
+    <ClInclude Include="src\bot\engines\building\buildplan\actions\SimpleAction.hpp" />
+    <ClInclude Include="src\bot\engines\building\buildplan\actions\ExpandTerritoryAction.hpp" />
+    <ClInclude Include="src\bot\engines\building\buildplan\actions\IAction.hpp" />
+    <ClInclude Include="src\bot\engines\building\buildplan\actions\SimpleActionResult.hpp" />
+    <ClInclude Include="src\bot\engines\building\buildplan\actions\StaticBuildAction.hpp" />
     <ClInclude Include="src\bot\engines\building\buildplan\plans\IBuildPlan.hpp" />
     <ClInclude Include="src\bot\engines\building\buildplan\BuildPlanBuildEngine.hpp" />
     <ClInclude Include="src\bot\engines\building\buildplan\plans\roman\SimpleRomanBuildPlan.hpp" />
@@ -174,6 +176,7 @@
     <ClInclude Include="src\sdk\entities\S4MovementType.hpp" />
     <ClInclude Include="src\sdk\landscape\S4EcoSector.hpp" />
     <ClInclude Include="src\sdk\landscape\S4GroundType.hpp" />
+    <ClInclude Include="src\sdk\landscape\S4LandscapeStatus.hpp" />
     <ClInclude Include="src\sdk\landscape\S4Resource.hpp" />
     <ClInclude Include="src\sdk\landscape\S4WorldTile.hpp" />
     <ClInclude Include="src\sdk\S4Api.hpp" />

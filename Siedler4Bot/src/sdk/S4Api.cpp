@@ -22,24 +22,26 @@ bool S4Api::Init() noexcept
 	return true;
 }
 
-std::vector<ResourceSpot> S4Api::FindResourceSpots(S4Resource start, S4Resource end, bool territoryOnly) noexcept
+std::vector<ResourceSpot> S4Api::FindResourceSpots(S4Resource start, S4Resource end, bool includeOwn, bool includeUnclaimed, bool includeEnemy) noexcept
 {
 	// find all resources that are in our ecosectors
 	std::deque<Vector2> resources{};
 
-	for (unsigned short y = 0; y < MapSize(); ++y)
+	for (Vector2 pos; pos.Y < MapSize(); ++pos.Y)
 	{
-		for (unsigned short x = 0; x < MapSize(); ++x)
+		for (; pos.X < MapSize(); ++pos.X)
 		{
-			const Vector2 pos{ x, y };
+			const auto owner = LandscapeOwner(pos);
 
-			if (!territoryOnly || LandscapeOwner(pos) == LocalPlayerId())
+			if ((includeOwn && owner == LocalPlayerId())
+				|| (includeUnclaimed && owner == 0)
+				|| (includeEnemy && owner > 0 && owner != LocalPlayerId())) // TODO: filter friendly players as we cant claim it
 			{
 				const S4Resource r = Resource(pos);
 
 				if (r >= start && r <= end)
 				{
-					resources.push_back({ x, y });
+					resources.push_back(pos);
 				}
 			}
 		}
@@ -83,56 +85,156 @@ std::vector<ResourceSpot> S4Api::FindResourceSpots(S4Resource start, S4Resource 
 	return spots;
 }
 
-Vector2 S4Api::FindClosestBuildingSpot(const Vector2& destination, S4Building building) noexcept
+bool S4Api::FindClosestBuildingSpot(const Vector2& destination, S4Building building, Vector2& position, int maxDistance, int minDistance) noexcept
 {
-	unsigned short bestDistance = 65535;
-	Vector2 bestPosition{ 65535, 65535 };
+	bool found = false;
+	unsigned short bestDistance = USHRT_MAX;
+	position = Vector2{ USHRT_MAX, USHRT_MAX };
 
-	for (unsigned short y = 0; y < MapSize(); ++y)
+	for (Vector2 pos; pos.Y < MapSize(); ++pos.Y)
 	{
-		for (unsigned short x = 0; x < MapSize(); ++x)
+		for (; pos.X < MapSize(); ++pos.X)
 		{
-			const Vector2 pos{ x, y };
-
 			if (LandscapeOwner(pos) == LocalPlayerId() && CanBuild(pos, building) >= S4BuildCheckResult::Okay)
 			{
 				unsigned short distance = destination.DistanceTo(pos);
 
-				if (distance < bestDistance)
+				if (distance >= minDistance && distance <= maxDistance && distance < bestDistance)
 				{
 					bestDistance = distance;
-					bestPosition = { x, y };
+					position = pos;
+					found = true;
 				}
 			}
 		}
 	}
 
-	return bestPosition;
+	return found;
 }
 
-Vector2 S4Api::FindClosestSpotOnBorder(const Vector2& destination) noexcept
+bool S4Api::FindClosestSpotOnBorder(const Vector2& destination, Vector2& position) noexcept
 {
-	unsigned short bestDistance = 65535;
-	Vector2 bestPosition{ 65535, 65535 };
+	bool found = false;
+	unsigned short bestDistance = USHRT_MAX;
+	position = Vector2{ USHRT_MAX, USHRT_MAX };
 
-	for (unsigned short y = 0; y < MapSize(); ++y)
+	for (Vector2 pos; pos.Y < MapSize(); ++pos.Y)
 	{
-		for (unsigned short x = 0; x < MapSize(); ++x)
+		for (; pos.X < MapSize(); ++pos.X)
 		{
-			const Vector2 pos{ x, y };
-
-			if (LandscapeOwner(pos) == LocalPlayerId() && Landscape(pos)->IsBorder())
+			if (Landscape(pos)->IsBorder() && LandscapeOwner(pos) == LocalPlayerId())
 			{
 				unsigned short distance = destination.DistanceTo(pos);
 
 				if (distance < bestDistance)
 				{
 					bestDistance = distance;
-					bestPosition = { x, y };
+					position = pos;
+					found = true;
 				}
 			}
 		}
 	}
 
-	return bestPosition;
+	return found;
+}
+
+bool S4Api::FindClosestTerrain(const Vector2& destination, S4GroundType groundType, Vector2& position, bool includeOwn, bool includeUnclaimed, bool includeEnemy) noexcept
+{
+	bool found = false;
+	unsigned short bestDistance = USHRT_MAX;
+	position = Vector2{ USHRT_MAX, USHRT_MAX };
+
+	for (Vector2 pos; pos.Y < MapSize(); ++pos.Y)
+	{
+		for (; pos.X < MapSize(); ++pos.X)
+		{
+			const auto owner = LandscapeOwner(pos);
+
+			if ((includeOwn && owner == LocalPlayerId())
+				|| (includeUnclaimed && owner == 0)
+				|| (includeEnemy && owner > 0 && owner != LocalPlayerId())) // TODO: filter friendly players as we cant claim it
+			{
+				if (Landscape(pos)->Type == groundType)
+				{
+					unsigned short distance = destination.DistanceTo(pos);
+
+					if (distance < bestDistance)
+					{
+						bestDistance = distance;
+						position = pos;
+						found = true;
+					}
+				}
+			}
+		}
+	}
+
+	return found;
+}
+
+bool S4Api::FindBestFreeBuildingSpot(S4Building building, Vector2& position) noexcept
+{
+	bool found = false;
+	Vector2 avgPos;
+	int count = 0;
+
+	for (Vector2 pos; pos.Y < MapSize(); ++pos.Y)
+	{
+		for (; pos.X < MapSize(); ++pos.X)
+		{
+			if (LandscapeOwner(pos) == LocalPlayerId() && CanBuild(pos, building) >= S4BuildCheckResult::Okay)
+			{
+				avgPos += pos;
+				++count;
+			}
+		}
+	}
+
+	avgPos /= count;
+
+	if (FindClosestBuildingSpot(avgPos, building, position))
+	{
+		found = true;
+	}
+
+	return found;
+}
+
+S4LandscapeStatus S4Api::GetTerrainStatus(const Vector2& position) noexcept
+{
+	const auto owner = LandscapeOwner(position);
+
+	if (owner == LocalPlayerId())
+	{
+		return S4LandscapeStatus::OWN;
+	}
+	else if (owner > 0)
+	{
+		// TODO: recognize friendly players
+		return S4LandscapeStatus::ENEMY;
+	}
+
+	return S4LandscapeStatus::UNCLAIMED;
+}
+
+Vector2 S4Api::CalculateSettlementCenter() noexcept
+{
+	Vector2 avgPos;
+	int count = 0;
+
+	for (Vector2 pos; pos.Y < MapSize(); ++pos.Y)
+	{
+		for (; pos.X < MapSize(); ++pos.X)
+		{
+			if (LandscapeOwner(pos) == LocalPlayerId())
+			{
+				avgPos += pos;
+				++count;
+			}
+		}
+	}
+
+	avgPos /= count;
+	return avgPos;
 }

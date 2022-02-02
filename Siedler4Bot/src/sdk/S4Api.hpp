@@ -21,6 +21,7 @@
 #include "landscape/S4WorldTile.hpp"
 #include "landscape/S4Resource.hpp"
 #include "landscape/S4EcoSector.hpp"
+#include "landscape/S4LandscapeStatus.hpp"
 #include "entities/S4Settler.hpp"
 #include "entities/S4MovementType.hpp"
 
@@ -279,9 +280,17 @@ public:
 	/// </summary>
 	/// <param name="building">S4Building to build</param>
 	/// <param name="position">Vector2</param>
-	inline void BuildAtClosestSpot(S4Building building, const Vector2& position) noexcept
+	inline bool BuildAtClosestSpot(S4Building building, const Vector2& position, int maxDistance = 256, int minDistance = 0) noexcept
 	{
-		SendNetEvent(S4EventId::BuildingBuild, static_cast<unsigned long>(building), FindClosestBuildingSpot(position, building).Packed());
+		Vector2 pos;
+
+		if (FindClosestBuildingSpot(position, building, pos, maxDistance, minDistance))
+		{
+			SendNetEvent(S4EventId::BuildingBuild, static_cast<unsigned long>(building), pos.Packed());
+			return true;
+		}
+
+		return false;
 	}
 
 	/// <summary>
@@ -321,7 +330,7 @@ public:
 	/// <param name="end">End Resource, example: Stone16</param>
 	/// <param name="territoryOnly">Only search in our territory</param>
 	/// <returns>ResourceSpots found</returns>
-	std::vector<ResourceSpot> FindResourceSpots(S4Resource start, S4Resource end, bool territoryOnly = true) noexcept;
+	std::vector<ResourceSpot> FindResourceSpots(S4Resource start, S4Resource end, bool includeOwn = true, bool includeUnclaimed = false, bool includeEnemy = false) noexcept;
 
 	/// <summary>
 	/// Try to find the closest Spot for the building to the given position.
@@ -329,7 +338,7 @@ public:
 	/// <param name="destination">Wanted position</param>
 	/// <param name="building">Building to build</param>
 	/// <returns>Closest position</returns>
-	Vector2 FindClosestBuildingSpot(const Vector2& destination, S4Building building) noexcept;
+	bool FindClosestBuildingSpot(const Vector2& destination, S4Building building, Vector2& position, int maxDistance = 256, int minDistance = 0) noexcept;
 
 	/// <summary>
 	/// Try to find the closest Spot on the settlement border.
@@ -337,5 +346,13 @@ public:
 	/// </summary>
 	/// <param name="destination">Wanted position</param>
 	/// <returns>Closest position</returns>
-	Vector2 FindClosestSpotOnBorder(const Vector2& destination) noexcept;
+	bool FindClosestSpotOnBorder(const Vector2& destination, Vector2& position) noexcept;
+
+	bool FindClosestTerrain(const Vector2& destination, S4GroundType groundType, Vector2& position, bool includeOwn = true, bool includeUnclaimed = false, bool includeEnemy = false) noexcept;
+
+	bool FindBestFreeBuildingSpot(S4Building building, Vector2& position) noexcept;
+
+	S4LandscapeStatus GetTerrainStatus(const Vector2& position) noexcept;
+
+	Vector2 CalculateSettlementCenter() noexcept;
 };
