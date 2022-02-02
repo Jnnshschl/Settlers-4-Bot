@@ -22,7 +22,7 @@ public:
 	virtual bool Execute() noexcept override
 	{
 		// TODO: use pathfinding for this, as there may occur deadlocks using this technique
-		if (S4->FindClosestBuildingSpot(Position, Tower, TowerPosition))
+		if (S4->FindClosestBuildingSpot(Position, Tower, TowerPosition, 4096))
 		{
 			if (TowerPosition.DistanceTo(LastTowerPosition) > 20)
 			{

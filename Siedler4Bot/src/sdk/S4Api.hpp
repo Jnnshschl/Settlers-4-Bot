@@ -348,7 +348,7 @@ public:
 	/// <returns>Closest position</returns>
 	bool FindClosestSpotOnBorder(const Vector2& destination, Vector2& position) noexcept;
 
-	bool FindClosestTerrain(const Vector2& destination, S4GroundType groundType, Vector2& position, bool includeOwn = true, bool includeUnclaimed = false, bool includeEnemy = false) noexcept;
+	bool FindClosestTerrain(const Vector2& destination, S4GroundType start, S4GroundType end, Vector2& position, bool includeOwn = true, bool includeUnclaimed = false, bool includeEnemy = false) noexcept;
 
 	bool FindBestFreeBuildingSpot(S4Building building, Vector2& position) noexcept;
 

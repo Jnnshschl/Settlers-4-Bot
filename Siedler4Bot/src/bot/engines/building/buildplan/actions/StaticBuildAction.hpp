@@ -23,7 +23,7 @@ public:
 
 	virtual bool Execute() noexcept override
 	{
-		Done == --Count <= 0;
+		Done = --Count <= 0;
 
 		if (S4->BuildAtClosestSpot(Building, Position, MaxDistance, MinDistance))
 		{

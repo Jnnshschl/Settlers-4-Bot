@@ -109,10 +109,11 @@ void DumpDebugInfo() noexcept
 	landownersFile.open("s4bot-landowners-dump.txt");
 	buildspotsFile.open("s4bot-buildspots-dump.txt");
 
-	for (Vector2 pos; pos.Y < S4->MapSize(); ++pos.Y)
+	for (unsigned short y = 0; y < S4->MapSize(); ++y)
 	{
-		for (; pos.X < S4->MapSize(); ++pos.X)
+		for (unsigned short x = 0; x < S4->MapSize(); ++x)
 		{
+			const Vector2 pos{ x, y };
 			S4WorldTile* w = S4->Landscape(pos);
 
 			if (w)

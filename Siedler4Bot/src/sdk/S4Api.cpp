@@ -26,11 +26,13 @@ std::vector<ResourceSpot> S4Api::FindResourceSpots(S4Resource start, S4Resource 
 {
 	// find all resources that are in our ecosectors
 	std::deque<Vector2> resources{};
+	std::vector<ResourceSpot> spots{};
 
-	for (Vector2 pos; pos.Y < MapSize(); ++pos.Y)
+	for (unsigned short y = 0; y < MapSize(); ++y)
 	{
-		for (; pos.X < MapSize(); ++pos.X)
+		for (unsigned short x = 0; x < MapSize(); ++x)
 		{
+			const Vector2 pos{ x, y };
 			const auto owner = LandscapeOwner(pos);
 
 			if ((includeOwn && owner == LocalPlayerId())
@@ -41,14 +43,11 @@ std::vector<ResourceSpot> S4Api::FindResourceSpots(S4Resource start, S4Resource 
 
 				if (r >= start && r <= end)
 				{
-					resources.push_back(pos);
+					resources.push_back({ pos.X, pos.Y });
 				}
 			}
 		}
 	}
-
-	// try to build spots
-	std::vector<ResourceSpot> spots{};
 
 	if (resources.empty()) return spots;
 
@@ -79,9 +78,6 @@ std::vector<ResourceSpot> S4Api::FindResourceSpots(S4Resource start, S4Resource 
 		resources.pop_front();
 	} while (!resources.empty());
 
-	// sort by amount of resources
-	// TODO: account for the size of the resource pile, 2x 16 spot is better that 5x 1
-	std::sort(spots.begin(), spots.end(), [](const auto& a, const auto& b) { return a.Amount() > b.Amount(); });
 	return spots;
 }
 
@@ -91,10 +87,12 @@ bool S4Api::FindClosestBuildingSpot(const Vector2& destination, S4Building build
 	unsigned short bestDistance = USHRT_MAX;
 	position = Vector2{ USHRT_MAX, USHRT_MAX };
 
-	for (Vector2 pos; pos.Y < MapSize(); ++pos.Y)
+	for (unsigned short y = 0; y < MapSize(); ++y)
 	{
-		for (; pos.X < MapSize(); ++pos.X)
+		for (unsigned short x = 0; x < MapSize(); ++x)
 		{
+			const Vector2 pos{ x, y };
+
 			if (LandscapeOwner(pos) == LocalPlayerId() && CanBuild(pos, building) >= S4BuildCheckResult::Okay)
 			{
 				unsigned short distance = destination.DistanceTo(pos);
@@ -118,10 +116,12 @@ bool S4Api::FindClosestSpotOnBorder(const Vector2& destination, Vector2& positio
 	unsigned short bestDistance = USHRT_MAX;
 	position = Vector2{ USHRT_MAX, USHRT_MAX };
 
-	for (Vector2 pos; pos.Y < MapSize(); ++pos.Y)
+	for (unsigned short y = 0; y < MapSize(); ++y)
 	{
-		for (; pos.X < MapSize(); ++pos.X)
+		for (unsigned short x = 0; x < MapSize(); ++x)
 		{
+			const Vector2 pos{ x, y };
+
 			if (Landscape(pos)->IsBorder() && LandscapeOwner(pos) == LocalPlayerId())
 			{
 				unsigned short distance = destination.DistanceTo(pos);
@@ -139,23 +139,24 @@ bool S4Api::FindClosestSpotOnBorder(const Vector2& destination, Vector2& positio
 	return found;
 }
 
-bool S4Api::FindClosestTerrain(const Vector2& destination, S4GroundType groundType, Vector2& position, bool includeOwn, bool includeUnclaimed, bool includeEnemy) noexcept
+bool S4Api::FindClosestTerrain(const Vector2& destination, S4GroundType start, S4GroundType end, Vector2& position, bool includeOwn, bool includeUnclaimed, bool includeEnemy) noexcept
 {
 	bool found = false;
 	unsigned short bestDistance = USHRT_MAX;
 	position = Vector2{ USHRT_MAX, USHRT_MAX };
 
-	for (Vector2 pos; pos.Y < MapSize(); ++pos.Y)
+	for (unsigned short y = 0; y < MapSize(); ++y)
 	{
-		for (; pos.X < MapSize(); ++pos.X)
+		for (unsigned short x = 0; x < MapSize(); ++x)
 		{
+			const Vector2 pos{ x, y };
 			const auto owner = LandscapeOwner(pos);
 
 			if ((includeOwn && owner == LocalPlayerId())
 				|| (includeUnclaimed && owner == 0)
 				|| (includeEnemy && owner > 0 && owner != LocalPlayerId())) // TODO: filter friendly players as we cant claim it
 			{
-				if (Landscape(pos)->Type == groundType)
+				if (Landscape(pos)->Type >= start && Landscape(pos)->Type <= end)
 				{
 					unsigned short distance = destination.DistanceTo(pos);
 
@@ -179,10 +180,12 @@ bool S4Api::FindBestFreeBuildingSpot(S4Building building, Vector2& position) noe
 	Vector2 avgPos;
 	int count = 0;
 
-	for (Vector2 pos; pos.Y < MapSize(); ++pos.Y)
+	for (unsigned short y = 0; y < MapSize(); ++y)
 	{
-		for (; pos.X < MapSize(); ++pos.X)
+		for (unsigned short x = 0; x < MapSize(); ++x)
 		{
+			const Vector2 pos{ x, y };
+
 			if (LandscapeOwner(pos) == LocalPlayerId() && CanBuild(pos, building) >= S4BuildCheckResult::Okay)
 			{
 				avgPos += pos;
@@ -223,10 +226,12 @@ Vector2 S4Api::CalculateSettlementCenter() noexcept
 	Vector2 avgPos;
 	int count = 0;
 
-	for (Vector2 pos; pos.Y < MapSize(); ++pos.Y)
+	for (unsigned short y = 0; y < MapSize(); ++y)
 	{
-		for (; pos.X < MapSize(); ++pos.X)
+		for (unsigned short x = 0; x < MapSize(); ++x)
 		{
+			const Vector2 pos{ x, y };
+
 			if (LandscapeOwner(pos) == LocalPlayerId())
 			{
 				avgPos += pos;
