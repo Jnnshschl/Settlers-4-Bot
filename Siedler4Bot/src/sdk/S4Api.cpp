@@ -223,7 +223,8 @@ S4LandscapeStatus S4Api::GetTerrainStatus(const Vector2& position) noexcept
 
 Vector2 S4Api::CalculateSettlementCenter() noexcept
 {
-	Vector2 avgPos;
+	int avgX = 0;
+	int avgY = 0;
 	int count = 0;
 
 	for (unsigned short y = 0; y < MapSize(); ++y)
@@ -234,12 +235,14 @@ Vector2 S4Api::CalculateSettlementCenter() noexcept
 
 			if (LandscapeOwner(pos) == LocalPlayerId())
 			{
-				avgPos += pos;
+				avgX += x;
+				avgY += y;
 				++count;
 			}
 		}
 	}
 
-	avgPos /= count;
-	return avgPos;
+	avgX /= count;
+	avgY /= count;
+	return { static_cast<unsigned short>(avgX), static_cast<unsigned short>(avgY) };
 }

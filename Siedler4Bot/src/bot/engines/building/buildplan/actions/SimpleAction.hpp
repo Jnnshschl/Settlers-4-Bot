@@ -1,6 +1,6 @@
 #pragma once
 
-#include <unordered_map>
+#include <vector>
 #include <functional>
 
 #include "IAction.hpp"
@@ -13,7 +13,7 @@ protected:
 	bool Done;
 	S4Api* S4;
 
-	std::unordered_map<SimpleActionResult, std::function<void(SimpleActionResult, const Vector2&)>> ResultHandlers;
+	std::vector<std::pair<SimpleActionResult, std::function<void(SimpleActionResult, const Vector2&)>>> ResultHandlers;
 
 public:
 	SimpleAction(S4Api* s4)
@@ -32,7 +32,7 @@ public:
 		{
 			for (const auto& resultHandler : ResultHandlers)
 			{
-				if (resultHandler.first == result && resultHandler.second)
+				if ((resultHandler.first == result || resultHandler.first == SimpleActionResult::ALL) && resultHandler.second)
 				{
 					resultHandler.second(result, pos);
 				}
@@ -40,13 +40,13 @@ public:
 		}
 	}
 
-	void SetResultHandler(SimpleActionResult result, std::function<void(SimpleActionResult, const Vector2&)> resultHandler) noexcept
+	void AddResultHandler(SimpleActionResult result, std::function<void(SimpleActionResult, const Vector2&)> resultHandler) noexcept
 	{
-		ResultHandlers[result] = resultHandler;
+		ResultHandlers.push_back(std::make_pair(result, resultHandler));
 	}
 
-	void ClearResultHandler(SimpleActionResult result) noexcept
+	void ClearResultHandlers() noexcept
 	{
-		ResultHandlers[result] = nullptr;
+		ResultHandlers.clear();
 	}
 };

@@ -92,6 +92,10 @@ void S4BotTick() noexcept
 	if (static bool sVar = false; OnKeyPressedOnce(S4Bot::Keys::DEBUG, sVar))
 	{
 		AyyLog("Executed Debug-Action at tick: ", S4->CurrentTick());
+
+		Vector2 center = S4->CalculateSettlementCenter();
+		AyyLog("X: ", center.X, " Y: ", center.Y);
+
 		// DumpDebugInfo();
 	}
 }
@@ -197,6 +201,10 @@ void S4BotEventHandler(S4Event* s4Event, bool isNet) noexcept
 
 		break;
 
+	case S4EventId::RecruitCivil:
+		AyyLog(EVENT_LOG_PREFIX, "RecruitCivil(vtable: 0x", POINTER_AS_HEX(s4Event->VTable), ", ecosector: ", s4Event->Param0AsPointer<unsigned short>()[1], ")");
+		break;
+
 	case S4EventId::BuildingBuild:
 		AyyLog(EVENT_LOG_PREFIX, "BuildingBuild(player: ", static_cast<int>(s4Event->Player), ", type: ", s4Event->Params[0], ", x: ", s4Event->Param1AsPointer<unsigned short>()[0], ", y: ", s4Event->Param1AsPointer<unsigned short>()[1], ")");
 		break;
@@ -227,7 +235,7 @@ void S4BotEventHandler(S4Event* s4Event, bool isNet) noexcept
 
 	default:
 		// disabled to avoid console spam
-		// AyyLog(EVENT_LOG_PREFIX, "vtable: 0x", POINTER_AS_HEX(s4Event->VTable));
+		AyyLog(EVENT_LOG_PREFIX, "vtable: 0x", POINTER_AS_HEX(s4Event->VTable));
 		break;
 	}
 }

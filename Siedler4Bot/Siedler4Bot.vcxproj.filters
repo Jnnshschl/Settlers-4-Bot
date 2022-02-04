@@ -126,6 +126,24 @@
     <ClInclude Include="src\sdk\landscape\S4LandscapeStatus.hpp">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="src\bot\engines\building\buildplan\actions\complex\BuildComplexAction.hpp">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="src\bot\engines\building\buildplan\actions\complex\BuildComplexAtResourcesAction.hpp">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="src\bot\engines\building\buildplan\actions\complex\BuildComplexAtStaticAction.hpp">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="src\bot\engines\building\buildplan\actions\complex\BuildComplexAtLandscapeAction.hpp">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="src\bot\engines\building\buildplan\plans\BuildEntry.hpp">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="src\bot\engines\building\buildplan\actions\WaitUntilAction.hpp">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\DllMain.cpp">

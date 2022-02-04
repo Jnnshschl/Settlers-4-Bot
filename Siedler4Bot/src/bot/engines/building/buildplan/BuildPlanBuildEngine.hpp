@@ -9,7 +9,7 @@
 #include "../IBuildEngine.hpp"
 #include "plans/IBuildPlan.hpp"
 
-constexpr auto BUILD_ENGINE_COOLDOWN = 1000;
+constexpr auto BUILD_ENGINE_COOLDOWN = 500;
 
 class BuildPlanBuildEngine : public IBuildEngine
 {

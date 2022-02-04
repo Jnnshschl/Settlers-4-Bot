@@ -157,11 +157,17 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="src\bot\engines\building\buildplan\actions\complex\BuildComplexAtLandscapeAction.hpp" />
+    <ClInclude Include="src\bot\engines\building\buildplan\actions\complex\BuildComplexAtStaticAction.hpp" />
     <ClInclude Include="src\bot\engines\building\buildplan\actions\SimpleAction.hpp" />
     <ClInclude Include="src\bot\engines\building\buildplan\actions\ExpandTerritoryAction.hpp" />
     <ClInclude Include="src\bot\engines\building\buildplan\actions\IAction.hpp" />
     <ClInclude Include="src\bot\engines\building\buildplan\actions\SimpleActionResult.hpp" />
     <ClInclude Include="src\bot\engines\building\buildplan\actions\StaticBuildAction.hpp" />
+    <ClInclude Include="src\bot\engines\building\buildplan\actions\complex\BuildComplexAction.hpp" />
+    <ClInclude Include="src\bot\engines\building\buildplan\actions\complex\BuildComplexAtResourcesAction.hpp" />
+    <ClInclude Include="src\bot\engines\building\buildplan\actions\WaitUntilAction.hpp" />
+    <ClInclude Include="src\bot\engines\building\buildplan\plans\BuildEntry.hpp" />
     <ClInclude Include="src\bot\engines\building\buildplan\plans\IBuildPlan.hpp" />
     <ClInclude Include="src\bot\engines\building\buildplan\BuildPlanBuildEngine.hpp" />
     <ClInclude Include="src\bot\engines\building\buildplan\plans\roman\SimpleRomanBuildPlan.hpp" />

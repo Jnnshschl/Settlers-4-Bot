@@ -1,7 +1,8 @@
 #pragma once
 
-#include <chrono>
 #include <deque>
+#include <chrono>
+#include <functional>
 
 #include <d3d9.h>
 #include <d3dx9.h>
@@ -22,6 +23,7 @@
 #include "landscape/S4Resource.hpp"
 #include "landscape/S4EcoSector.hpp"
 #include "landscape/S4LandscapeStatus.hpp"
+#include "entities/S4Entity.hpp"
 #include "entities/S4Settler.hpp"
 #include "entities/S4MovementType.hpp"
 
@@ -307,17 +309,17 @@ public:
 
 	inline void RecruitCivil(S4Settler type, unsigned long amount, unsigned short ecoSector = 0) noexcept
 	{
-		SendNetEvent(S4EventId::RecruitCivil, PackShorts(ecoSector, static_cast<unsigned short>(type)), amount);
+		SendNetEvent(S4EventId::RecruitCivil, PackShorts(static_cast<unsigned short>(type), ecoSector), amount);
 	}
 
 	inline void RecruitSpecial(S4Settler type, unsigned long amount, unsigned short ecoSector = 0) noexcept
 	{
-		SendNetEvent(S4EventId::RecruitSpecial, PackShorts(ecoSector, static_cast<unsigned short>(type)), amount);
+		SendNetEvent(S4EventId::RecruitSpecial, PackShorts(static_cast<unsigned short>(type), ecoSector), amount);
 	}
 
 	inline void RecruitMilitary(S4Settler type, unsigned long amount, unsigned short building) noexcept
 	{
-		SendNetEvent(S4EventId::RecruitMilitary, PackShorts(building, static_cast<unsigned short>(type)), amount);
+		SendNetEvent(S4EventId::RecruitMilitary, PackShorts(static_cast<unsigned short>(type), building), amount);
 	}
 
 	bool Init() noexcept;
@@ -331,6 +333,20 @@ public:
 	/// <param name="territoryOnly">Only search in our territory</param>
 	/// <returns>ResourceSpots found</returns>
 	std::vector<ResourceSpot> FindResourceSpots(S4Resource start, S4Resource end, bool includeOwn = true, bool includeUnclaimed = false, bool includeEnemy = false) noexcept;
+
+	inline auto FindResourceSpotsSortByAmount(S4Resource start, S4Resource end, bool includeOwn = true, bool includeUnclaimed = false, bool includeEnemy = false) noexcept
+	{
+		auto r = FindResourceSpots(start, end, includeOwn, includeUnclaimed, includeEnemy);
+		std::sort(r.begin(), r.end(), [](const auto& a, const auto& b) { return a.Amount() > b.Amount(); });
+		return r;
+	}
+
+	inline auto FindResourceSpotsSortByDistance(const Vector2& pos, S4Resource start, S4Resource end, bool includeOwn = true, bool includeUnclaimed = false, bool includeEnemy = false) noexcept
+	{
+		auto r = FindResourceSpots(start, end, includeOwn, includeUnclaimed, includeEnemy);
+		std::sort(r.begin(), r.end(), [pos](const auto& a, const auto& b) { return a.CenterPosition().DistanceTo(pos) < b.CenterPosition().DistanceTo(pos); });
+		return r;
+	}
 
 	/// <summary>
 	/// Try to find the closest Spot for the building to the given position.

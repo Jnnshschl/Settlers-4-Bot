@@ -1,7 +1,5 @@
 #pragma once
 
-#include "Entities/S4Entity.hpp"
-
 enum class S4EventId : unsigned long
 {
     None = 0,

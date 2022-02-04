@@ -46,7 +46,7 @@ public:
 			return owner == S4->LocalPlayerId(); // was it me?
 		}
 
-		Done == true;
+		Done = true;
 		CallResultHandlers(SimpleActionResult::ERROR_NO_SPACE, Position);
 		return false;
 	}
